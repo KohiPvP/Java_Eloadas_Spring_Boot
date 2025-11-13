@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="hu" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Hiba történt</title>
+    <link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body class="is-preload">
+<div id="wrapper">
+    <header id="header">
+        <h1><a href="/soap">Java alkalmazások</a></h1>
+    </header>
+
+    <div id="main">
+        <h2>⚠️ Hiba történt az adatok feldolgozása során!</h2>
+        <p th:if="${message}" th:text="${message}"></p>
+
+        <p>Lehetséges okok:</p>
+        <ul>
+            <li>Nem elérhető az MNB szolgáltatás</li>
+            <li>Hibás vagy hiányzó dátum</li>
+            <li>Ismeretlen szerverhiba</li>
+        </ul>
+
+        <a href="/soap" class="button">🔙 Vissza az űrlaphoz</a>
+    </div>
+</div>
+</body>
+</html>

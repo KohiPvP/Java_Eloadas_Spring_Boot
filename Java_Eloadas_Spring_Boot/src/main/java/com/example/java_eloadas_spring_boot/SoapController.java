@@ -32,38 +32,63 @@ public class SoapController {
     }
 
     @PostMapping("/soap")
-    public String soap2(@ModelAttribute MessagePrice messagePrice, Model model)
-            throws MNBArfolyamServiceSoapGetExchangeRatesStringFaultFaultMessage {
+    public String soap2(@ModelAttribute MessagePrice messagePrice, Model model) {
+        try {
+            // --- dátum validáció ---
+            LocalDate today = LocalDate.now();
+            LocalDate start = LocalDate.parse(messagePrice.getStartDate());
+            LocalDate end = LocalDate.parse(messagePrice.getEndDate());
 
-        MNBArfolyamServiceSoapImpl impl = new MNBArfolyamServiceSoapImpl();
-        MNBArfolyamServiceSoap service = impl.getCustomBindingMNBArfolyamServiceSoap();
+            if (start.isAfter(today) || end.isAfter(today)) {
+                model.addAttribute("error", "A dátum nem lehet jövőbeni!");
+                model.addAttribute("param", messagePrice);
+                return "form";
+            }
 
-        String xml = service.getExchangeRates(
-                messagePrice.getStartDate(),
-                messagePrice.getEndDate(),
-                messagePrice.getCurrency()
-        );
+            if (start.isAfter(end)) {
+                model.addAttribute("error", "A kezdő dátum nem lehet későbbi, mint a záró dátum!");
+                model.addAttribute("param", messagePrice);
+                return "form";
+            }
 
-        List<RatePoint> points = parseMnbXml(xml, messagePrice.getCurrency());
+            // --- SOAP hívás ---
+            MNBArfolyamServiceSoapImpl impl = new MNBArfolyamServiceSoapImpl();
+            MNBArfolyamServiceSoap service = impl.getCustomBindingMNBArfolyamServiceSoap();
 
-        points.sort(Comparator.comparing(RatePoint::getDate));
+            String xml = service.getExchangeRates(
+                    messagePrice.getStartDate(),
+                    messagePrice.getEndDate(),
+                    messagePrice.getCurrency()
+            );
 
-        List<String> labels = points.stream().map(p -> p.getDate().toString()).collect(Collectors.toList());
-        List<BigDecimal> series = points.stream().map(RatePoint::getRate).collect(Collectors.toList());
+            List<RatePoint> points = parseMnbXml(xml, messagePrice.getCurrency());
+            points.sort(Comparator.comparing(RatePoint::getDate));
 
-        String strOut = "Currency: " + messagePrice.getCurrency() + "; " +
-                "Start date: " + messagePrice.getStartDate() + "; " +
-                "End date: " + messagePrice.getEndDate() + "; " +
-                "Items: " + points.size();
+            List<String> labels = points.stream().map(p -> p.getDate().toString()).collect(Collectors.toList());
+            List<BigDecimal> series = points.stream().map(RatePoint::getRate).collect(Collectors.toList());
 
-        model.addAttribute("sendOut", strOut);
-        model.addAttribute("labels", labels);
-        model.addAttribute("series", series);
-        model.addAttribute("currency", messagePrice.getCurrency());
+            String strOut = "Currency: " + messagePrice.getCurrency() + "; " +
+                    "Start date: " + messagePrice.getStartDate() + "; " +
+                    "End date: " + messagePrice.getEndDate() + "; " +
+                    "Items: " + points.size();
 
-        return "result";
+            model.addAttribute("sendOut", strOut);
+            model.addAttribute("labels", labels);
+            model.addAttribute("series", series);
+            model.addAttribute("currency", messagePrice.getCurrency());
+
+            return "result";
+
+        } catch (MNBArfolyamServiceSoapGetExchangeRatesStringFaultFaultMessage e) {
+            model.addAttribute("message", "SOAP hiba: " + e.getMessage());
+            return "error";
+        } catch (Exception e) {
+            model.addAttribute("message", "Váratlan hiba történt: " + e.getMessage());
+            return "error";
+        }
     }
 
+    // --- XML feldolgozó segédfüggvény ---
     private List<RatePoint> parseMnbXml(String xml, String currency) {
         List<RatePoint> out = new ArrayList<>();
         if (xml == null || xml.isEmpty()) return out;
@@ -78,19 +103,16 @@ public class SoapController {
             NodeList dayNodes = doc.getElementsByTagName("Day");
             for (int i = 0; i < dayNodes.getLength(); i++) {
                 Element dayEl = (Element) dayNodes.item(i);
-                String dateStr = dayEl.getAttribute("date"); // pl. 2024-05-03
+                String dateStr = dayEl.getAttribute("date");
                 LocalDate date = LocalDate.parse(dateStr);
 
                 NodeList rateNodes = dayEl.getElementsByTagName("Rate");
                 for (int r = 0; r < rateNodes.getLength(); r++) {
                     Element rateEl = (Element) rateNodes.item(r);
-                    String curr = rateEl.getAttribute("curr"); // pl. EUR
+                    String curr = rateEl.getAttribute("curr");
                     if (!currency.equalsIgnoreCase(curr)) continue;
 
-                    // MNB sokszor vesszőt használ tizedeselválasztónak
                     String txt = rateEl.getTextContent().trim().replace(",", ".");
-                    // Ha unit attribútum > 1, akkor (érték / unit) is lehet – itt feltételezzük unit=1,
-                    // de ha biztosra akarsz menni:
                     int unit = 1;
                     String unitAttr = rateEl.getAttribute("unit");
                     if (unitAttr != null && !unitAttr.isEmpty()) {
