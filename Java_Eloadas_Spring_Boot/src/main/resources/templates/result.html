@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="hu" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Historical prices</title>
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="is-preload">
+<div id="wrapper">
+    <header id="header">
+        <h1><a href="index">Java alkalmazások</a></h1>
+        <nav class="links">
+            <ul>
+                <li><a href="/soap">SOAP Menü</a></li>
+                <li><a href="#">Forex Menü</a></li>
+            </ul>
+        </nav>
+        <nav class="main">
+            <ul>
+                <li class="search">
+                    <a class="fa-search" href="#search">Keresés</a>
+                    <form id="search" method="get" action="#">
+                        <input type="text" name="query" placeholder="Keresés" />
+                    </form>
+                </li>
+                <li class="menu">
+                    <a class="fa-bars" href="#menu">Menu</a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <div id="main">
+        <h1>Historical prices</h1>
+
+        <p th:text="${sendOut}"></p>
+
+        <!-- A vászon a grafikonhoz -->
+        <div style="max-width: 900px;">
+            <canvas id="rateChart"></canvas>
+        </div>
+
+        <p><a th:href="@{'/soap'}">Vissza az űrlaphoz</a></p>
+    </div>
+</div>
+
+<!-- Thymeleaf-ből JS-be adatátadás -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const labels = /*[[${labels}]]*/ [];
+    const series = /*[[${series}]]*/ [];
+    const currency = /*[[${currency}]]*/ 'EUR';
+
+    const ctx = document.getElementById('rateChart').getContext('2d');
+    // Egyszerű vonaldiagram
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,               // dátumok (YYYY-MM-DD)
+            datasets: [{
+                label: 'MNB ' + currency + ' árfolyam',
+                data: series,             // árfolyam értékek
+                tension: 0.2,
+                fill: false,
+                pointRadius: 2,
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            aspectRatio: 2.2,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: true },
+                tooltip: { enabled: true },
+                title: { display: true, text: 'Történeti árfolyamok (MNB)' }
+            },
+            scales: {
+                x: { title: { display: true, text: 'Dátum' } },
+                y: {
+                    title: { display: true, text: 'Árfolyam' },
+                    ticks: { callback: (v) => v.toString() }
+                }
+            }
+        }
+    });
+    /*]]>*/
+</script>
+</body>
+</html>
