@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="hu" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Actual prices</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        .grid { display:grid; gap:18px; grid-template-columns: 1fr; }
+        @media (min-width: 992px) { .grid { grid-template-columns: 1fr 1fr; } }
+        canvas { background:#fff; border-radius:12px; padding:8px; }
+        .meta { font-size:0.95rem; opacity:.8; margin:6px 0 14px; }
+    </style>
+</head>
+<body class="single is-preload">
+<div id="wrapper">
+    <header id="header">
+        <h1><a href="index">Java alkalmazások</a></h1>
+        <nav class="links">
+            <ul>
+                <li><a href="forex_accounts">Forex Menü</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div id="main">
+        <h1>Actual prices – <span id="instrument" th:text="${instr}">EUR_USD</span></h1>
+        <div class="meta">
+            <span>Státusz: <span id="status">–</span></span> •
+            <span>Tradeable: <span id="tradeable">–</span></span> •
+            <span>Utolsó frissítés: <span id="updatetime">–</span></span> •
+            <a th:href="@{'/actual_prices'}">Másik instrument</a>
+        </div>
+
+        <div class="grid">
+            <div>
+                <h3>Order book depth (likviditás ár szerint)</h3>
+                <canvas id="depthChart" height="260"></canvas>
+            </div>
+            <div>
+                <h3>Mid price (idősor)</h3>
+                <canvas id="midChart" height="260"></canvas>
+            </div>
+        </div>
+
+        <div style="margin-top:18px">
+            <strong>Closeout Bid:</strong> <span id="bid">–</span> •
+            <strong>Closeout Ask:</strong> <span id="ask">–</span> •
+            <strong>Mid:</strong> <span id="mid">–</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    const instrument = document.getElementById('instrument').textContent.trim();
+    const statusEl = document.getElementById('status');
+    const tradEl   = document.getElementById('tradeable');
+    const timeEl   = document.getElementById('updatetime');
+    const bidEl    = document.getElementById('bid');
+    const askEl    = document.getElementById('ask');
+    const midEl    = document.getElementById('mid');
+
+    // Depth chart (bids+asks külön dataset)
+    const depthCtx = document.getElementById('depthChart');
+    const depthChart = new Chart(depthCtx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [
+                { label: 'Bids (likviditás)', data: [], stack: 'depth' },
+                { label: 'Asks (likviditás)', data: [], stack: 'depth' }
+            ]
+        },
+        options: {
+            responsive: true,
+            animation: false,
+            scales: {
+                x: { title: { display: true, text: 'Ár' } },
+                y: { title: { display: true, text: 'Likviditás' }, beginAtZero: true }
+            },
+            plugins: { legend: { position: 'top' } }
+        }
+    });
+
+    // Mid price time series
+    const midCtx = document.getElementById('midChart');
+    const midChart = new Chart(midCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{ label: 'Mid', data: [], tension: 0.2 }]
+        },
+        options: {
+            responsive: true,
+            animation: false,
+            scales: {
+                x: { title: { display: true, text: 'Idő' } },
+                y: { title: { display: true, text: 'Ár' } }
+            },
+            plugins: { legend: { position: 'top' } }
+        }
+    });
+
+    async function fetchPrice() {
+        const resp = await fetch(`/api/prices?instrument=${encodeURIComponent(instrument)}`, { cache: 'no-store' });
+        if (!resp.ok) return;
+        const p = await resp.json();
+
+        // UI meta
+        statusEl.textContent = p.status;
+        tradEl.textContent = p.tradeable ? 'igen' : 'nem';
+        try {
+            const t = new Date(p.time);
+            timeEl.textContent = isNaN(t.getTime()) ? p.time : t.toLocaleTimeString();
+        } catch { timeEl.textContent = p.time; }
+
+        bidEl.textContent = p.closeoutBid?.toFixed(5);
+        askEl.textContent = p.closeoutAsk?.toFixed(5);
+        midEl.textContent = p.mid?.toFixed(5);
+
+        // Depth: összevont tengely – ugyanazokat a címkéket használjuk (árak)
+        const bidLabels = (p.bids || []).map(b => b.price.toFixed(5));
+        const askLabels = (p.asks || []).map(a => a.price.toFixed(5));
+        const labelsSet = Array.from(new Set([...bidLabels, ...askLabels])).sort((a,b)=>parseFloat(a)-parseFloat(b));
+
+        const bidMap = new Map(bidLabels.map((lab, i) => [lab, p.bids[i].liquidity]));
+        const askMap = new Map(askLabels.map((lab, i) => [lab, p.asks[i].liquidity]));
+
+        depthChart.data.labels = labelsSet;
+        depthChart.data.datasets[0].data = labelsSet.map(l => bidMap.get(l) || 0);
+        depthChart.data.datasets[1].data = labelsSet.map(l => askMap.get(l) || 0);
+        depthChart.update();
+
+        // Mid idősor – max 120 pont (kb. 2 perc, ha 1s poll)
+        const stamp = new Date().toLocaleTimeString();
+        midChart.data.labels.push(stamp);
+        midChart.data.datasets[0].data.push(p.mid);
+        if (midChart.data.labels.length > 120) {
+            midChart.data.labels.shift();
+            midChart.data.datasets[0].data.shift();
+        }
+        midChart.update();
+    }
+
+    // induló fetch + poll (állítsd be a neked kényelmes intervallumot)
+    fetchPrice();
+    const POLL_MS = 1000; // 1 mp – ha sok, tedd 2000–3000 ms-ra
+    const timer = setInterval(fetchPrice, POLL_MS);
+
+    // ha elnavigál a user, állítsuk le
+    window.addEventListener('beforeunload', () => clearInterval(timer));
+</script>
+</body>
+</html>
