@@ -93,6 +93,7 @@ public class ClientPrice {
      * <p>
      * The Price's Instrument.
      * <p>
+     *
      * @return the Instrument
      * @see InstrumentName
      */
