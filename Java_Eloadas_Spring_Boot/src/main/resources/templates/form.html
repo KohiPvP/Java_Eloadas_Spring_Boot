@@ -38,10 +38,48 @@
                 <option value="GBP">GBP</option>
                 <option value="JPY">JPY</option>
             </select><br>
-            Start date: <input type="date" th:field="*{startDate}"><br>
-            End date: <input type="date" th:field="*{endDate}"><br>
-            <input type="submit" value="Submit">
+
+            Start date:
+            <input type="date" th:field="*{startDate}" id="startDate"><br>
+
+            End date:
+            <input type="date" th:field="*{endDate}" id="endDate"><br>
+
+            <input type="submit" id="submitBtn" value="Lekérdezés" disabled>
         </form>
+
+        <!-- Hibaüzenet, ha szerver oldali validáció jelez -->
+        <div th:if="${error}" style="color:red; font-weight:bold;">
+            <p th:text="${error}"></p>
+        </div>
+
+        <script>
+            // Ma dátum beállítása max értéknek (ne lehessen jövő dátum)
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('startDate').setAttribute('max', today);
+            document.getElementById('endDate').setAttribute('max', today);
+
+            // Elemszelektorok
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            const submitBtn = document.getElementById('submitBtn');
+
+            // Ellenőrzés: mindkét dátum ki van-e választva
+            function checkDates() {
+                const startDate = startDateInput.value;
+                const endDate = endDateInput.value;
+
+                if (startDate && endDate) {
+                    submitBtn.disabled = false;  // mindkettő megadva → engedélyezett
+                } else {
+                    submitBtn.disabled = true;   // hiányzik valamelyik → tiltott
+                }
+            }
+
+            // Eseményfigyelők a dátumválasztáshoz
+            startDateInput.addEventListener('change', checkDates);
+            endDateInput.addEventListener('change', checkDates);
+        </script>
     </div>
 </div>
 </body>
