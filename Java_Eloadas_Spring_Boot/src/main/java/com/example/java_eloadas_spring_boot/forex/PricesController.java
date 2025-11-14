@@ -2,9 +2,13 @@ package com.example.java_eloadas_spring_boot.forex;
 
 import com.example.java_eloadas_spring_boot.MessageActPrice;
 import com.oanda.v20.Context;
+import com.oanda.v20.order.MarketOrderRequest;
+import com.oanda.v20.order.OrderCreateRequest;
+import com.oanda.v20.order.OrderCreateResponse;
 import com.oanda.v20.pricing.ClientPrice;
 import com.oanda.v20.pricing.PricingGetRequest;
 import com.oanda.v20.pricing.PricingGetResponse;
+import com.oanda.v20.primitives.InstrumentName;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -119,5 +123,32 @@ public class PricesController {
         public void setPrice(double price) { this.price = price; }
         public long getLiquidity() { return liquidity; }
         public void setLiquidity(long liquidity) { this.liquidity = liquidity; }
+    }
+    @GetMapping("/open_position")
+    public String open_position(Model model) {
+        model.addAttribute("param", new MessageOpenPosition());
+        return "form_open_position";
+    }
+    @PostMapping("/open_position")
+    public String open_position2(@ModelAttribute MessageOpenPosition messageOpenPosition, Model
+            model) {
+        String strOut;
+        try {
+            InstrumentName instrument = new InstrumentName(messageOpenPosition.getInstrument());
+            OrderCreateRequest request = new OrderCreateRequest(Config.ACCOUNTID);
+            MarketOrderRequest marketorderrequest = new MarketOrderRequest();
+            marketorderrequest.setInstrument(instrument);
+            marketorderrequest.setUnits(messageOpenPosition.getUnits());
+            request.setOrder(marketorderrequest);
+            Context ctx = new Context(Config.URL, Config.TOKEN);
+            OrderCreateResponse response = ctx.order.create(request);
+            strOut="tradeId: "+response.getOrderFillTransaction().getId();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        model.addAttribute("instr", messageOpenPosition.getInstrument());
+        model.addAttribute("units", messageOpenPosition.getUnits());
+        model.addAttribute("id", strOut);
+        return "result_open_position";
     }
 }

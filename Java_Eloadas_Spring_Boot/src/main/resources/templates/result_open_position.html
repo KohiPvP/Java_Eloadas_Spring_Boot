@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <h1>Position opened</h1>
+    <p th:text="'Instrument: ' + ${instr}" />
+    <p th:text="'Units: ' + ${units}" />
+    <p th:text="${id}" />
+    <a th:href="@{'/open_position'}">Open another position</a>
+</body>
+</html>
