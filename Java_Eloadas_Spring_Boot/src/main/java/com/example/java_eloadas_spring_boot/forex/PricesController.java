@@ -1,10 +1,16 @@
 package com.example.java_eloadas_spring_boot.forex;
 
 import com.example.java_eloadas_spring_boot.MessageActPrice;
+import com.example.java_eloadas_spring_boot.MessageHistPrice;
 import com.oanda.v20.Context;
+
 import com.oanda.v20.order.MarketOrderRequest;
 import com.oanda.v20.order.OrderCreateRequest;
 import com.oanda.v20.order.OrderCreateResponse;
+import com.oanda.v20.instrument.Candlestick;
+import com.oanda.v20.instrument.CandlestickGranularity;
+import com.oanda.v20.instrument.InstrumentCandlesRequest;
+import com.oanda.v20.instrument.InstrumentCandlesResponse;
 import com.oanda.v20.pricing.ClientPrice;
 import com.oanda.v20.pricing.PricingGetRequest;
 import com.oanda.v20.pricing.PricingGetResponse;
@@ -150,5 +156,57 @@ public class PricesController {
         model.addAttribute("units", messageOpenPosition.getUnits());
         model.addAttribute("id", strOut);
         return "result_open_position";
+
+    @GetMapping("/historical_prices")
+    public String historical_prices(Model model) {
+        model.addAttribute("par", new MessageHistPrice());
+        return "form_historical_prices";
+    }
+
+    @PostMapping("/historical_prices")
+    public String historical_prices2(@ModelAttribute MessageHistPrice mhp, Model model) {
+        String strOut = "";
+        try {
+            Context ctx = new Context(Config.URL, Config.TOKEN);
+            InstrumentCandlesRequest req = new InstrumentCandlesRequest(new InstrumentName(mhp.getInstrument()));
+            switch (mhp.getGranularity()) {
+                case "M1": {
+                    req.setGranularity(CandlestickGranularity.M1);
+                    break;
+                }
+                case "H1": {
+                    req.setGranularity(CandlestickGranularity.H1);
+                    break;
+                }
+                case "D": {
+                    req.setGranularity(CandlestickGranularity.D);
+                    break;
+                }
+                case "W": {
+                    req.setGranularity(CandlestickGranularity.W);
+                    break;
+                }
+                case "M": {
+                    req.setGranularity(CandlestickGranularity.M);
+                    break;
+                }
+            }
+
+            req.setCount(Long.valueOf(10));
+            InstrumentCandlesResponse resp = ctx.instrument.candles(req);
+
+            for (Candlestick c : resp.getCandles()) {
+                strOut += c.getTime() + "\t" + c.getMid() + "\n";
+            }
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        model.addAttribute("instrument", mhp.getInstrument());
+        model.addAttribute("granularity", mhp.getGranularity());
+        model.addAttribute("price", strOut);
+
+        return "result_historical_prices";
     }
 }
