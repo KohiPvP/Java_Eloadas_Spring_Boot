@@ -15,6 +15,8 @@ import com.oanda.v20.pricing.ClientPrice;
 import com.oanda.v20.pricing.PricingGetRequest;
 import com.oanda.v20.pricing.PricingGetResponse;
 import com.oanda.v20.primitives.InstrumentName;
+import com.oanda.v20.trade.TradeCloseRequest;
+import com.oanda.v20.trade.TradeSpecifier;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -148,7 +150,7 @@ public class PricesController {
             request.setOrder(marketorderrequest);
             Context ctx = new Context(Config.URL, Config.TOKEN);
             OrderCreateResponse response = ctx.order.create(request);
-            strOut="tradeId: "+response.getOrderFillTransaction().getId();
+            strOut = "tradeId: " + response.getOrderFillTransaction().getId();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -156,7 +158,7 @@ public class PricesController {
         model.addAttribute("units", messageOpenPosition.getUnits());
         model.addAttribute("id", strOut);
         return "result_open_position";
-
+    }
     @GetMapping("/historical_prices")
     public String historical_prices(Model model) {
         model.addAttribute("par", new MessageHistPrice());
@@ -208,5 +210,24 @@ public class PricesController {
         model.addAttribute("price", strOut);
 
         return "result_historical_prices";
+    }
+    @GetMapping("/close_position")
+    public String close_position(Model model) {
+        model.addAttribute("param", new MessageClosePosition());
+        return "form_close_position";
+    }
+
+    @PostMapping("/close_position")
+    public String close_position2(@ModelAttribute MessageClosePosition messageClosePosition, Model model) {
+        String tradeId= messageClosePosition.getTradeId()+"";
+        String strOut="Closed tradeId= "+tradeId;
+        try {
+            Context ctx = new Context(Config.URL, Config.TOKEN);
+            ctx.trade.close(new TradeCloseRequest(Config.ACCOUNTID, new TradeSpecifier(tradeId)));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        model.addAttribute("tradeId", strOut);
+        return "result_close_position";
     }
 }
