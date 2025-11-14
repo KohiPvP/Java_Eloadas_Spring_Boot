@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="/assets/css/main.css" />
+</head>
+<body class="single is-preload">
+<div id="wrapper">
+    <h1>Position opened</h1>
+    <p th:text="'Instrument: ' + ${instr}" />
+    <p th:text="'Units: ' + ${units}" />
+    <p th:text="${id}" />
+    <a th:href="@{'/open_position'}">Open another position</a>
+</div>
+</body>
+</html>

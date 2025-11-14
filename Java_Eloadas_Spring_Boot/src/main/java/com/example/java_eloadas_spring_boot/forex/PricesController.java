@@ -3,6 +3,10 @@ package com.example.java_eloadas_spring_boot.forex;
 import com.example.java_eloadas_spring_boot.MessageActPrice;
 import com.example.java_eloadas_spring_boot.MessageHistPrice;
 import com.oanda.v20.Context;
+
+import com.oanda.v20.order.MarketOrderRequest;
+import com.oanda.v20.order.OrderCreateRequest;
+import com.oanda.v20.order.OrderCreateResponse;
 import com.oanda.v20.instrument.Candlestick;
 import com.oanda.v20.instrument.CandlestickGranularity;
 import com.oanda.v20.instrument.InstrumentCandlesRequest;
@@ -126,6 +130,32 @@ public class PricesController {
         public long getLiquidity() { return liquidity; }
         public void setLiquidity(long liquidity) { this.liquidity = liquidity; }
     }
+    @GetMapping("/open_position")
+    public String open_position(Model model) {
+        model.addAttribute("param", new MessageOpenPosition());
+        return "form_open_position";
+    }
+    @PostMapping("/open_position")
+    public String open_position2(@ModelAttribute MessageOpenPosition messageOpenPosition, Model
+            model) {
+        String strOut;
+        try {
+            InstrumentName instrument = new InstrumentName(messageOpenPosition.getInstrument());
+            OrderCreateRequest request = new OrderCreateRequest(Config.ACCOUNTID);
+            MarketOrderRequest marketorderrequest = new MarketOrderRequest();
+            marketorderrequest.setInstrument(instrument);
+            marketorderrequest.setUnits(messageOpenPosition.getUnits());
+            request.setOrder(marketorderrequest);
+            Context ctx = new Context(Config.URL, Config.TOKEN);
+            OrderCreateResponse response = ctx.order.create(request);
+            strOut="tradeId: "+response.getOrderFillTransaction().getId();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        model.addAttribute("instr", messageOpenPosition.getInstrument());
+        model.addAttribute("units", messageOpenPosition.getUnits());
+        model.addAttribute("id", strOut);
+        return "result_open_position";
 
     @GetMapping("/historical_prices")
     public String historical_prices(Model model) {
