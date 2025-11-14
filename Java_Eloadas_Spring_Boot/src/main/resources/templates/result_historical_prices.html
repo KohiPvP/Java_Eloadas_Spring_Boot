@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="hu" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Historical prices</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <style>.meta { font-size:0.95rem; opacity:.8; margin:6px 0 14px; }</style>
+</head>
+<body class="single is-preload">
+<div id="wrapper">
+    <header id="header">
+        <h1><a href="index">Java alkalmazások</a></h1>
+        <nav class="links">
+            <ul>
+                <li><a href="forex_accounts">Forex Menü</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div>
+        <header>
+            <h1 th:text="'Historical prices — ' + ${instrument}">EUR_USD</h1>
+            <div class="meta">
+                <span th:text="'Instrument: ' + ${instrument}">Instrument</span>
+                <span th:text="'Granularity: ' + ${granularity}">Granularity</span>
+                <a th:href="@{'historical_prices'}">Másik instrument</a>
+            </div>
+        </header>
+
+        <div>
+            <table aria-describedby="candles">
+                <thead>
+                <tr><th>Idő (helyi)</th><th>Open</th><th>High</th><th>Low</th><th>Close</th></tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+
+
+        <pre id="rawPrice" style="display:none" th:text="${price}"></pre>
+    </div>
+</div>
+
+<script>
+    const raw = document.getElementById('rawPrice').innerText.trim();
+    const regex = /([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z)\s+CandlestickData\(o=([0-9.+-eE]+),\s*h=([0-9.+-eE]+),\s*l=([0-9.+-eE]+),\s*c=([0-9.+-eE]+)\)/g;
+
+    const matches = [];
+    let m;
+    while ((m = regex.exec(raw)) !== null) {
+        matches.push({
+            time: m[1],
+            o: parseFloat(m[2]),
+            h: parseFloat(m[3]),
+            l: parseFloat(m[4]),
+            c: parseFloat(m[5])
+        });
+    }
+
+    if (matches.length === 0 && raw.length > 0) {
+        const lines = raw.split(/\r?\n/).filter(Boolean);
+        lines.forEach(line => {
+            const t = line.split(' ')[0];
+            const nums = line.match(/([0-9]*\.[0-9]+)/g) || [];
+            if (t && nums.length >= 4) {
+                matches.push({ time: t, o: +nums[0], h: +nums[1], l: +nums[2], c: +nums[3] });
+            }
+        });
+    }
+
+    const tableBody = document.getElementById('table-body');
+    const toLocal = iso => {
+        try {
+            const d = new Date(iso);
+            if (isNaN(d)) return iso;
+            // format: YYYY-MM-DD HH:mm
+            const pad = n=> String(n).padStart(2,'0');
+            return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        } catch(e){ return iso; }
+    };
+
+    matches.forEach(row => {
+        const tr = document.createElement('tr');
+        const tdTime = document.createElement('td');
+        tdTime.textContent = toLocal(row.time);
+        const tdO = document.createElement('td'); tdO.textContent = row.o.toFixed(5);
+        const tdH = document.createElement('td'); tdH.textContent = row.h.toFixed(5);
+        const tdL = document.createElement('td'); tdL.textContent = row.l.toFixed(5);
+        const tdC = document.createElement('td'); tdC.textContent = row.c.toFixed(5);
+        tdC.className = (row.c >= row.o) ? 'pos' : 'neg';
+        tr.append(tdTime, tdO, tdH, tdL, tdC);
+        tableBody.appendChild(tr);
+    });
+
+</script>
+</body>
+</html>
