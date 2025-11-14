@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="hu" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Historical prices</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="/assets/css/main.css" />
+    <link rel="stylesheet" href="assets/css/subNav.css"> <!--forex almenü css-->
+    <style>.meta { font-size:0.95rem; opacity:.8; margin:6px 0 14px; }</style>
+</head>
+<body class="single is-preload">
+<div id="wrapper">
+    <header id="header">
+        <h1><a href="index">Java alkalmazások</a></h1>
+        <nav class="links">
+            <ul>
+                <li><a href="forex_accounts">Forex Menü</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!--Forex Almenü-->
+    <div id="subNavHeader">
+        <nav class="subNav">
+            <ul>
+                <li><a href="actual_prices">Aktuális árak</a></li>
+                <li><a href="historical_prices">Historikus árak</a></li>
+                <li><a href="open_position">Pozíció nyitás</a></li>
+                <li><a href="open_positions">Nyitott pozíciók</a></li>
+                <li><a href="close_position">Pozíció bezárás</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div>
+        <header>
+            <h1>Nyitott pozíciók</h1>
+            <div class="meta">
+                <span th:text="'Pozíciók száma: ' + ${trades.size()}">position</span>
+            </div>
+        </header>
+
+        <div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Instrument</th>
+                        <th>Open Time</th>
+                        <th>Units</th>
+                        <th>Open Price</th>
+                        <th>Unrealized P/L</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:if="${trades.size() == 0}">
+                        <td colspan="6" style="text-align:center; padding:20px; color: #888;">
+                            Nincs nyitott pozíció.
+                        </td>
+                    </tr>
+                    <tr th:each="t : ${trades}">
+                        <td th:text="${t.id}"></td>
+                        <td th:text="${t.instrument}"></td>
+                        <td th:text="${t.openTime}"></td>
+                        <td th:text="${t.currentUnits}"></td>
+                        <td th:text="${t.price}"></td>
+                        <td th:text="${t.unrealizedPL}"></td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+</div>
+
+<script>
+</script>
+</body>
+</html>

@@ -15,6 +15,7 @@ import com.oanda.v20.pricing.ClientPrice;
 import com.oanda.v20.pricing.PricingGetRequest;
 import com.oanda.v20.pricing.PricingGetResponse;
 import com.oanda.v20.primitives.InstrumentName;
+import com.oanda.v20.trade.Trade;
 import com.oanda.v20.trade.TradeCloseRequest;
 import com.oanda.v20.trade.TradeSpecifier;
 import org.springframework.stereotype.Controller;
@@ -30,6 +31,9 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 import java.io.InputStream;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -229,5 +233,47 @@ public class PricesController {
         }
         model.addAttribute("tradeId", strOut);
         return "result_close_position";
+    }
+
+    @GetMapping("/open_positions")
+    public String open_positions(Model model) {
+//        String strOut = "";
+        try {
+            Context ctx = new Context(Config.URL, Config.TOKEN);
+            List<Trade> trades = ctx.trade.listOpen(Config.ACCOUNTID).getTrades();
+            List<OpenPositions> result = new ArrayList<>();
+
+            for (Trade trade : trades) {
+                OpenPositions op =  new OpenPositions();
+                op.setId(trade.getId().toString());
+                op.setInstrument(trade.getInstrument().toString());
+
+                // OpenTime átalakítása
+                ZonedDateTime utcTime = ZonedDateTime.parse(trade.getOpenTime());
+                ZonedDateTime localTime = utcTime.withZoneSameInstant(ZoneId.systemDefault());
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                String openTime = localTime.format(formatter);
+                op.setOpenTime(openTime);
+
+                op.setCurrentUnits(trade.getCurrentUnits().toString());
+                op.setPrice(trade.getPrice().toString());
+                op.setUnrealizedPL(trade.getUnrealizedPL().toString());
+
+                result.add(op);
+            }
+
+
+            model.addAttribute("trades", result);
+
+//            for(Trade trade: trades) {
+//                strOut+=trade.getId()+","+trade.getInstrument()+","+trade.getOpenTime()+","+trade.getCurrentUnits()+","+trade.getPrice()+","+trade.getUnrealizedPL()+";";
+//
+//            }
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return "open_positions";
     }
 }
