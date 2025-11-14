@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="assets/css/main.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+
+</head>
+<body class="single is-preload">
+<div id="wrapper">
+    <header id="header">
+        <h1><a href="index">Java alkalmazások</a></h1>
+        <nav class="links">
+            <ul>
+                <li><a href="#">SOAP Menü</a></li>
+                <li><a href="forex_accounts">Forex Menü</a></li>
+            </ul>
+        </nav>
+        <nav class="main">
+            <ul>
+                <li class="search">
+                    <a class="fa-search" href="#search">Keresés</a>
+                    <form id="search" method="get" action="#">
+                        <input type="text" name="query" placeholder="Keresés" />
+                    </form>
+                </li>
+                <li class="menu">
+                    <a class="fa-bars" href="#menu">Menü</a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Menu -->
+    <section id="menu">
+
+        <!-- Search -->
+        <section>
+            <form class="search" method="get" action="#">
+                <input type="text" name="query" placeholder="Keresés" />
+            </form>
+        </section>
+
+        <!-- Links -->
+        <section>
+            <ul class="links">
+                <li>
+                    <a href="index">
+                        <h3>Főoldal menü</h3>
+                        <p>Az alkalmazás bemutatása.</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="forex_accounts">
+                        <h3>Forex</h3>
+                        <p>Forex fiók, számlaegyenleg megjelenítése.</p>
+                    </a>
+                </li>
+            </ul>
+        </section>
+
+        <!-- Actions -->
+        <!--							<section>-->
+        <!--								<ul class="actions stacked">-->
+        <!--									<li><a href="#" class="button large fit">Log In</a></li>-->
+        <!--								</ul>-->
+        <!--							</section>-->
+
+    </section>
+    <h1>Enter tradeId for Close positon</h1>
+    <form action="#" th:action="@{/close_position}" th:object="${param}" method="post">
+        <input type="number" name="size" th:field="*{tradeId}">
+        <input type="submit" value="Submit">
+    </form>
+</div>
+</body>
+</html>
