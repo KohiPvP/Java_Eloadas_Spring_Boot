@@ -72,13 +72,19 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.example.java_eloadas_spring_boot.JavaEloadasSpringBootApplication</mainClass>
+                </configuration>
             </plugin>
+
             <plugin>
                 <groupId>com.sun.xml.ws</groupId>
                 <artifactId>jaxws-maven-plugin</artifactId>
                 <version>4.0.3</version>
                 <executions>
                     <execution>
+                        <!-- Célszerű generate-sources fázishoz kötni -->
+                        <phase>generate-sources</phase>
                         <goals>
                             <goal>wsimport</goal>
                         </goals>
@@ -89,12 +95,11 @@
                         <wsdlUrl>http://www.mnb.hu/arfolyamok.asmx?wsdl</wsdlUrl>
                     </wsdlUrls>
                     <packageName>soapclient</packageName>
-                    <sourceDestDir>
-                        src/main/java
-                    </sourceDestDir>
+                    <sourceDestDir>src/main/java</sourceDestDir>
                 </configuration>
             </plugin>
         </plugins>
     </build>
+
 
 </project>
